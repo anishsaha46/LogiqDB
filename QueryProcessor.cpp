@@ -22,7 +22,7 @@ void executeQuery(Table& table, const std::string& query) {
             std::cout << "\n";
         }
     }
-
+    
     // INSERT query
     else if (command == "INSERT") {
         std::string intoKeyword, tableName, valuesKeyword, values;
@@ -57,7 +57,7 @@ void executeQuery(Table& table, const std::string& query) {
 
         std::cout << "Inserted new row.\n";
     }
-
+    
     // UPDATE query
     else if (command == "UPDATE") {
         std::string tableName, setKeyword, whereKeyword, columnToUpdate, newValue, whereColumn, whereValue;
@@ -97,3 +97,37 @@ void executeQuery(Table& table, const std::string& query) {
             }
         }
     }
+    
+    // DELETE query
+    else if (command == "DELETE") {
+        std::string fromKeyword, tableName, whereKeyword, whereColumn, whereValue;
+        ss >> fromKeyword >> tableName >> whereKeyword;
+
+        if (fromKeyword != "FROM" || whereKeyword != "WHERE") {
+            std::cerr << "Syntax Error: Expected FROM and WHERE.\n";
+            return;
+        }
+
+        std::getline(ss, whereColumn, '=');
+        ss >> whereValue;
+
+        // Trim spaces
+        whereColumn.erase(std::remove(whereColumn.begin(), whereColumn.end(), ' '), whereColumn.end());
+
+        // Perform the deletion
+        table.rows.erase(std::remove_if(table.rows.begin(), table.rows.end(), [&](const Row& row) {
+            for (const auto& field : row.fields) {
+                if (field.name == whereColumn && field.value == whereValue) {
+                    return true;
+                }
+            }
+            return false;
+        }), table.rows.end());
+
+        std::cout << "Deleted rows where " << whereColumn << "=" << whereValue << "\n";
+    } 
+    
+    else {
+        std::cerr << "Error: Unknown query type.\n";
+    }
+}
