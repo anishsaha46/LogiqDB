@@ -1,13 +1,13 @@
 #include "QueryProcessor.h"
 #include <sstream>
 #include <algorithm>
+#include "FileManager.h"
 
 void executeQuery(Table& table, const std::string& query) {
     std::istringstream ss(query);
     std::string command;
     ss >> command;
 
-    // SELECT query
     if (command == "SELECT") {
         std::cout << "Table: " << table.tableName << "\n";
         for (const auto& col : table.columnNames) {
@@ -22,8 +22,7 @@ void executeQuery(Table& table, const std::string& query) {
             std::cout << "\n";
         }
     }
-    
-    // INSERT query
+
     else if (command == "INSERT") {
         std::string intoKeyword, tableName, valuesKeyword, values;
         ss >> intoKeyword >> tableName >> valuesKeyword;
@@ -51,83 +50,61 @@ void executeQuery(Table& table, const std::string& query) {
 
         Row newRow;
         for (size_t i = 0; i < table.columnNames.size(); ++i) {
+            if (table.isPrimaryKeyDuplicate(table.columnNames[i], rowValues[i])) {
+                std::cerr << "Error: Primary key violation.\n";
+                return;
+            }
             newRow.addField(table.columnNames[i], rowValues[i]);
         }
         table.addRow(newRow);
-
+        FileManager::saveTable(table);
         std::cout << "Inserted new row.\n";
     }
-    
-    // UPDATE query
-    else if (command == "UPDATE") {
-        std::string tableName, setKeyword, whereKeyword, columnToUpdate, newValue, whereColumn, whereValue;
-        ss >> tableName >> setKeyword;
 
-        if (setKeyword != "SET") {
-            std::cerr << "Syntax Error: Expected SET.\n";
-            return;
-        }
-
-        std::getline(ss, columnToUpdate, '=');
-        ss >> newValue >> whereKeyword;
-
-        if (whereKeyword != "WHERE") {
-            std::cerr << "Syntax Error: Expected WHERE.\n";
-            return;
-        }
-
-        std::getline(ss, whereColumn, '=');
-        ss >> whereValue;
-
-        // Trim spaces
-        columnToUpdate.erase(std::remove(columnToUpdate.begin(), columnToUpdate.end(), ' '), columnToUpdate.end());
-        whereColumn.erase(std::remove(whereColumn.begin(), whereColumn.end(), ' '), whereColumn.end());
-
-        // Perform the update
-        for (auto& row : table.rows) {
-            for (auto& field : row.fields) {
-                if (field.name == whereColumn && field.value == whereValue) {
-                    for (auto& updateField : row.fields) {
-                        if (updateField.name == columnToUpdate) {
-                            updateField.value = newValue;
-                            std::cout << "Updated " << columnToUpdate << " to " << newValue << " where " << whereColumn << "=" << whereValue << "\n";
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // DELETE query
     else if (command == "DELETE") {
-        std::string fromKeyword, tableName, whereKeyword, whereColumn, whereValue;
+        std::string fromKeyword, tableName, whereKeyword;
         ss >> fromKeyword >> tableName >> whereKeyword;
 
         if (fromKeyword != "FROM" || whereKeyword != "WHERE") {
-            std::cerr << "Syntax Error: Expected FROM and WHERE.\n";
+            std::cerr << "Syntax Error: Expected 'FROM' and 'WHERE'.\n";
             return;
         }
 
-        std::getline(ss, whereColumn, '=');
-        ss >> whereValue;
+        std::string condition;
+        std::getline(ss, condition);
+        condition.erase(std::remove(condition.begin(), condition.end(), ' '), condition.end());
 
-        // Trim spaces
-        whereColumn.erase(std::remove(whereColumn.begin(), whereColumn.end(), ' '), whereColumn.end());
+        std::vector<std::string> conditions;
+        std::istringstream condStream(condition);
+        std::string part;
+        while (std::getline(condStream, part, 'A')) { // Splitting on AND
+            conditions.push_back(part);
+        }
 
-        // Perform the deletion
         table.rows.erase(std::remove_if(table.rows.begin(), table.rows.end(), [&](const Row& row) {
-            for (const auto& field : row.fields) {
-                if (field.name == whereColumn && field.value == whereValue) {
-                    return true;
+            bool shouldDelete = true;
+            for (const auto& cond : conditions) {
+                std::string col, val;
+                std::istringstream cStream(cond);
+                std::getline(cStream, col, '=');
+                cStream >> val;
+
+                bool match = false;
+                for (const auto& field : row.fields) {
+                    if (field.name == col && field.value == val) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) {
+                    shouldDelete = false;
+                    break;
                 }
             }
-            return false;
+            return shouldDelete;
         }), table.rows.end());
 
-        std::cout << "Deleted rows where " << whereColumn << "=" << whereValue << "\n";
-    } 
-    
-    else {
-        std::cerr << "Error: Unknown query type.\n";
+        FileManager::saveTable(table);
+        std::cout << "Deleted rows matching condition.\n";
     }
 }
