@@ -57,3 +57,43 @@ void executeQuery(Table& table, const std::string& query) {
 
         std::cout << "Inserted new row.\n";
     }
+
+    // UPDATE query
+    else if (command == "UPDATE") {
+        std::string tableName, setKeyword, whereKeyword, columnToUpdate, newValue, whereColumn, whereValue;
+        ss >> tableName >> setKeyword;
+
+        if (setKeyword != "SET") {
+            std::cerr << "Syntax Error: Expected SET.\n";
+            return;
+        }
+
+        std::getline(ss, columnToUpdate, '=');
+        ss >> newValue >> whereKeyword;
+
+        if (whereKeyword != "WHERE") {
+            std::cerr << "Syntax Error: Expected WHERE.\n";
+            return;
+        }
+
+        std::getline(ss, whereColumn, '=');
+        ss >> whereValue;
+
+        // Trim spaces
+        columnToUpdate.erase(std::remove(columnToUpdate.begin(), columnToUpdate.end(), ' '), columnToUpdate.end());
+        whereColumn.erase(std::remove(whereColumn.begin(), whereColumn.end(), ' '), whereColumn.end());
+
+        // Perform the update
+        for (auto& row : table.rows) {
+            for (auto& field : row.fields) {
+                if (field.name == whereColumn && field.value == whereValue) {
+                    for (auto& updateField : row.fields) {
+                        if (updateField.name == columnToUpdate) {
+                            updateField.value = newValue;
+                            std::cout << "Updated " << columnToUpdate << " to " << newValue << " where " << whereColumn << "=" << whereValue << "\n";
+                        }
+                    }
+                }
+            }
+        }
+    }
