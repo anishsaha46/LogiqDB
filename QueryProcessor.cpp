@@ -154,3 +154,54 @@ else if (command == "JOIN") {
     }
 }
 
+Table QueryProcessor::leftJoin(const Table& leftTable, const Table& rightTable, const std::string& joinColumn) {
+    Table result("LeftJoin_" + leftTable.tableName + "_" + rightTable.tableName);
+
+    // Adding columns from both tables
+    result.columnNames = leftTable.columnNames;
+    result.columnNames.insert(result.columnNames.end(), rightTable.columnNames.begin(), rightTable.columnNames.end());
+
+    // Performing LEFT JOIN
+    for (const auto& leftRow : leftTable.rows) {
+        Row newRow;
+        bool matchFound = false;
+
+        for (const auto& rightRow : rightTable.rows) {
+            std::string leftValue, rightValue;
+            
+            // Get the join column value for both tables
+            for (const auto& field : leftRow.fields) {
+                if (field.name == joinColumn) {
+                    leftValue = field.value;
+                    break;
+                }
+            }
+            for (const auto& field : rightRow.fields) {
+                if (field.name == joinColumn) {
+                    rightValue = field.value;
+                    break;
+                }
+            }
+
+            // If values match, merge the rows
+            if (leftValue == rightValue) {
+                matchFound = true;
+                newRow = leftRow;  // Copy left row
+                for (const auto& field : rightRow.fields) {
+                    newRow.addField(field.name, field.value);
+                }
+                result.addRow(newRow);
+            }
+        }
+
+        // If no match found, add the left row with empty values for the right table
+        if (!matchFound) {
+            newRow = leftRow;  
+            for (const auto& col : rightTable.columnNames) {
+                newRow.addField(col, "NULL");
+            }
+            result.addRow(newRow);
+        }
+    }
+    return result;
+}
