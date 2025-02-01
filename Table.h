@@ -53,6 +53,18 @@ public:
     void addRow(const Row& row) {
         rows.push_back(row);
     }
+
+    // 🔹 Method to find a row by column value (Needed for JOIN queries)
+    Row* findRowByColumn(const std::string& columnName, const std::string& value) {
+        for (auto& row : rows) {
+            for (const auto& field : row.fields) {
+                if (field.name == columnName && field.value == value) {
+                    return &row;
+                }
+            }
+        }
+        return nullptr; // Not found
+    }
 };
 
 #endif
