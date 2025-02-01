@@ -107,4 +107,50 @@ void executeQuery(Table& table, const std::string& query) {
         FileManager::saveTable(table);
         std::cout << "Deleted rows matching condition.\n";
     }
+
+
+else if (command == "JOIN") {
+    std::string table1Name, onKeyword, table2Name, condition;
+    ss >> table1Name >> onKeyword >> table2Name;
+
+    if (onKeyword != "ON") {
+        std::cerr << "Syntax Error: Expected 'ON'.\n";
+        return;
+    }
+
+    std::getline(ss, condition);
+    condition.erase(std::remove(condition.begin(), condition.end(), ' '), condition.end());
+
+    std::string col1, col2;
+    std::istringstream conditionStream(condition);
+    std::getline(conditionStream, col1, '=');
+    std::getline(conditionStream, col2);
+
+    Table table1(table1Name), table2(table2Name);
+    FileManager::loadTable(table1);
+    FileManager::loadTable(table2);
+
+    std::cout << "Joined Table:\n";
+    for (const auto& col : table1.columnNames) std::cout << col << "\t";
+    for (const auto& col : table2.columnNames) std::cout << col << "\t";
+    std::cout << "\n-------------------------------------------------\n";
+
+    for (const auto& row1 : table1.rows) {
+        std::string joinValue;
+        for (const auto& field : row1.fields) {
+            if (field.name == col1) {
+                joinValue = field.value;
+                break;
+            }
+        }
+
+        Row* matchedRow = table2.findRowByColumn(col2, joinValue);
+        if (matchedRow) {
+            for (const auto& field : row1.fields) std::cout << field.value << "\t";
+            for (const auto& field : matchedRow->fields) std::cout << field.value << "\t";
+            std::cout << "\n";
+        }
+        }
+    }
 }
+
