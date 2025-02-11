@@ -23,6 +23,10 @@ void executeQuery(Table& table, const std::string& query) {
         }
     }
 
+
+
+
+
     else if (command == "INSERT") {
         std::string intoKeyword, tableName, valuesKeyword, values;
         ss >> intoKeyword >> tableName >> valuesKeyword;
@@ -61,52 +65,65 @@ void executeQuery(Table& table, const std::string& query) {
         std::cout << "Inserted new row.\n";
     }
 
+
+
+
+
     else if (command == "DELETE") {
         std::string fromKeyword, tableName, whereKeyword;
         ss >> fromKeyword >> tableName >> whereKeyword;
-
+    
         if (fromKeyword != "FROM" || whereKeyword != "WHERE") {
             std::cerr << "Syntax Error: Expected 'FROM' and 'WHERE'.\n";
             return;
         }
-
+    
         std::string condition;
         std::getline(ss, condition);
         condition.erase(std::remove(condition.begin(), condition.end(), ' '), condition.end());
-
-        std::vector<std::string> conditions;
+    
+        bool useAnd = condition.find("AND") != std::string::npos;
+        bool useOr = condition.find("OR") != std::string::npos;
+    
+        std::vector<std::pair<std::string, std::string>> conditions;
         std::istringstream condStream(condition);
         std::string part;
-        while (std::getline(condStream, part, 'A')) { // Splitting on AND
-            conditions.push_back(part);
+        
+        while (std::getline(condStream, part, useAnd ? 'A' : 'O')) { // Splitting on AND or OR
+            size_t eqPos = part.find('=');
+            if (eqPos != std::string::npos) {
+                std::string col = part.substr(0, eqPos);
+                std::string val = part.substr(eqPos + 1);
+                conditions.push_back({col, val});
+            }
         }
-
+    
         table.rows.erase(std::remove_if(table.rows.begin(), table.rows.end(), [&](const Row& row) {
-            bool shouldDelete = true;
+            bool match = useAnd;
             for (const auto& cond : conditions) {
-                std::string col, val;
-                std::istringstream cStream(cond);
-                std::getline(cStream, col, '=');
-                cStream >> val;
-
-                bool match = false;
+                bool found = false;
                 for (const auto& field : row.fields) {
-                    if (field.name == col && field.value == val) {
-                        match = true;
+                    if (field.name == cond.first && field.value == cond.second) {
+                        found = true;
                         break;
                     }
                 }
-                if (!match) {
-                    shouldDelete = false;
-                    break;
-                }
+                if (useAnd)
+                    match &= found; // AND condition: all must be true
+                else
+                    match |= found; // OR condition: at least one must be true
             }
-            return shouldDelete;
+            return match;
         }), table.rows.end());
-
+    
         FileManager::saveTable(table);
         std::cout << "Deleted rows matching condition.\n";
     }
+    
+
+
+
+
 
 
 else if (command == "JOIN") {
@@ -153,6 +170,10 @@ else if (command == "JOIN") {
         }
     }
 }
+
+
+
+
 
 Table QueryProcessor::leftJoin(const Table& leftTable, const Table& rightTable, const std::string& joinColumn) {
     Table result("LeftJoin_" + leftTable.tableName + "_" + rightTable.tableName);
