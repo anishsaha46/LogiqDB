@@ -9,17 +9,77 @@ void executeQuery(Table& table, const std::string& query) {
     ss >> command;
 
     if (command == "SELECT") {
+        std::string fromKeyword, tableName, whereKeyword;
+        ss >> fromKeyword >> tableName;
+    
+        if (fromKeyword != "FROM") {
+            std::cerr << "Syntax Error: Expected 'FROM'.\n";
+            return;
+        }
+    
+        bool hasWhere = false;
+        std::vector<std::pair<std::string, std::string>> conditions;
+        bool useAnd = false, useOr = false;
+    
+        std::string word;
+        if (ss >> word && word == "WHERE") {
+            hasWhere = true;
+            std::string condition;
+            std::getline(ss, condition);
+            condition.erase(std::remove(condition.begin(), condition.end(), ' '), condition.end());
+    
+            useAnd = condition.find("AND") != std::string::npos;
+            useOr = condition.find("OR") != std::string::npos;
+    
+            std::istringstream condStream(condition);
+            std::string part;
+            
+            while (std::getline(condStream, part, useAnd ? 'A' : 'O')) { // Splitting on AND or OR
+                size_t eqPos = part.find('=');
+                if (eqPos != std::string::npos) {
+                    std::string col = part.substr(0, eqPos);
+                    std::string val = part.substr(eqPos + 1);
+                    conditions.push_back({col, val});
+                }
+            }
+        }
+    
         std::cout << "Table: " << table.tableName << "\n";
         for (const auto& col : table.columnNames) {
             std::cout << col << "\t";
         }
         std::cout << "\n---------------------\n";
-
+    
         for (const auto& row : table.rows) {
-            for (const auto& field : row.fields) {
-                std::cout << field.value << "\t";
+            if (!hasWhere) { // If there's no WHERE condition, print all rows
+                for (const auto& field : row.fields) {
+                    std::cout << field.value << "\t";
+                }
+                std::cout << "\n";
+                continue;
             }
-            std::cout << "\n";
+    
+            bool match = useAnd;
+            for (const auto& cond : conditions) {
+                bool found = false;
+                for (const auto& field : row.fields) {
+                    if (field.name == cond.first && field.value == cond.second) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (useAnd)
+                    match &= found; // AND condition: all must be true
+                else
+                    match |= found; // OR condition: at least one must be true
+            }
+    
+            if (match) {
+                for (const auto& field : row.fields) {
+                    std::cout << field.value << "\t";
+                }
+                std::cout << "\n";
+            }
         }
     }
 
