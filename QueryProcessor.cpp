@@ -2,7 +2,22 @@
 #include <sstream>
 #include <algorithm>
 #include "FileManager.h"
+#include <vector>
+#include <stack>
+#include <unordered_map>
 
+// Define operator precedence
+const std::unordered_map<std::string, int> operatorPrecedence = {
+    {"AND", 1},
+    {"OR", 0}
+};
+
+// Struct to store a condition (column, value, operator)
+struct Condition {
+    std::string column;
+    std::string value;
+    std::string op;
+};
 void executeQuery(Table& table, const std::string& query) {
     std::istringstream ss(query);
     std::string command;
