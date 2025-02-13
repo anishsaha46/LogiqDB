@@ -18,6 +18,31 @@ struct Condition {
     std::string value;
     std::string op;
 };
+
+
+// Function to evaluate a single condition (column comparison)
+bool evaluateCondition(const Row& row, const Condition& cond) {
+    for (const auto& field : row.fields) {
+        if (field.name == cond.column) {
+            if (cond.op == "=") {
+                return field.value == cond.value;
+            } else if (cond.op == "!=") {
+                return field.value != cond.value;
+            } else if (cond.op == ">") {
+                return field.value > cond.value;
+            } else if (cond.op == "<") {
+                return field.value < cond.value;
+            } else if (cond.op == ">=") {
+                return field.value >= cond.value;
+            } else if (cond.op == "<=") {
+                return field.value <= cond.value;
+            }
+        }
+    }
+    return false; // Column not found
+}
+
+
 void executeQuery(Table& table, const std::string& query) {
     std::istringstream ss(query);
     std::string command;
