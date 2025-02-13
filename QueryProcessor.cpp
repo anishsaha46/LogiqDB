@@ -42,6 +42,31 @@ bool evaluateCondition(const Row& row, const Condition& cond) {
     return false; // Column not found
 }
 
+// Function to parse conditions from a WHERE clause
+void parseConditions(const std::string& conditionStr, std::vector<Condition>& conditions, std::vector<std::string>& logicalOps) {
+    std::istringstream ss(conditionStr);
+    std::string token;
+
+    while (ss >> token) {
+        if (token == "AND" || token == "OR") {
+            logicalOps.push_back(token);
+        } else {
+            // Extract column name, operator, and value
+            size_t pos = token.find_first_of("=<>!");
+            if (pos != std::string::npos) {
+                std::string column = token.substr(0, pos);
+                std::string op;
+                if (token[pos + 1] == '=') {
+                    op = token.substr(pos, 2); // Handle >=, <=, !=
+                } else {
+                    op = token.substr(pos, 1);
+                }
+                std::string value = token.substr(pos + op.size());
+                conditions.push_back({column, value, op});
+            }
+        }
+    }
+}
 
 void executeQuery(Table& table, const std::string& query) {
     std::istringstream ss(query);
