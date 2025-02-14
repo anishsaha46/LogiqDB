@@ -68,6 +68,22 @@ void parseConditions(const std::string& conditionStr, std::vector<Condition>& co
     }
 }
 
+// Function to evaluate a boolean expression (involving AND/OR)
+bool evaluateExpression(const Row& row, const std::vector<Condition>& conditions, const std::vector<std::string>& logicalOps) {
+    if (conditions.empty()) return false;
+
+    bool result = evaluateCondition(row, conditions[0]); // Start with first condition
+
+    for (size_t i = 0; i < logicalOps.size(); ++i) {
+        bool nextCondition = evaluateCondition(row, conditions[i + 1]);
+        if (logicalOps[i] == "AND") {
+            result = result && nextCondition;
+        } else if (logicalOps[i] == "OR") {
+            result = result || nextCondition;
+        }
+    }
+    return result;
+}
 void executeQuery(Table& table, const std::string& query) {
     std::istringstream ss(query);
     std::string command;
