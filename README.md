@@ -6,6 +6,8 @@ This project implements a basic database system with features such as:
 * **Data Insertion:** Insert rows of data into tables.
 * **Data Retrieval:** Select and display data from tables.
 * **Data Deletion:** Delete rows from tables based on conditions.
+* **Data Update:** Update rows in tables based on conditions.
+* **Inner Join:** Perform inner join operations between two tables.
 * **Left Join:** Perform left join operations between two tables.
 
 **Getting Started:**
@@ -28,6 +30,8 @@ This project implements a basic database system with features such as:
 *   The program currently supports the following basic SQL-like queries:
     *   `INSERT INTO table_name VALUES (value1, value2, ...)`
     *   `SELECT`
+    *   `SELECT * FROM table_name WHERE condition`
+    *   `UPDATE table_name SET column=value WHERE condition`
     *   `DELETE FROM table_name WHERE condition`
     *   `JOIN table1 ON table2` (currently supports basic inner joins)
     *   `LEFT JOIN table1 ON table2`
