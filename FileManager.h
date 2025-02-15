@@ -6,27 +6,32 @@
 
 class FileManager {
 public:
-    static void saveTable(const Table& table) {
-        std::ofstream file(table.tableName + ".txt");
-        if (!file) {
-            std::cerr << "Error opening file for saving.\n";
-            return;
-        }
+static void saveTable(const Table& table) {
+    std::ofstream file(table.tableName + ".txt");
+    if (!file) {
+        std::cerr << "Error opening file for saving: " << table.tableName << ".txt\n";
+        return;
+    }
 
-        for (const auto& column : table.columnNames) {
-            file << column << ",";
+    // Write column names
+    for (size_t i = 0; i < table.columnNames.size(); ++i) {
+        file << table.columnNames[i];
+        if (i != table.columnNames.size() - 1) file << ",";  // Avoid trailing comma
+    }
+    file << "\n";
+
+    // Write rows
+    for (const auto& row : table.rows) {
+        for (size_t i = 0; i < row.fields.size(); ++i) {
+            file << row.fields[i].value;
+            if (i != row.fields.size() - 1) file << ",";  // Avoid trailing comma
         }
         file << "\n";
-
-        for (const auto& row : table.rows) {
-            for (const auto& field : row.fields) {
-                file << field.value << ",";
-            }
-            file << "\n";
-        }
-
-        file.close();
     }
+
+    file.close();
+    std::cout << "Table saved successfully: " << table.tableName << ".txt\n";
+}
 
     static void loadTable(Table& table) {
         std::ifstream file(table.tableName + ".txt");
